@@ -1,0 +1,16 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>My New Hugo Site</title>
+        <link>http://localhost/</link>
+        <description>My New Hugo Site</description>
+        <generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Mon, 31 Aug 2020 20:38:38 &#43;0200</lastBuildDate>
+            <atom:link href="http://localhost/index.xml" rel="self" type="application/rss+xml" />
+        <item>
+    <title>Authentication</title>
+    <link>http://localhost/posts/authentication/</link>
+    <pubDate>Mon, 31 Aug 2020 20:38:38 &#43;0200</pubDate>
+    <author>Author</author>
+    <guid>http://localhost/posts/authentication/</guid>
+    <description><![CDATA[asdasdasd]]></description>
+</item></channel>
+</rss>
