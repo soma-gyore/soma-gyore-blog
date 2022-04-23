@@ -1,5 +1,5 @@
 ---
-title: "Breached password detection a.k.a. binary serach and indexing in action"
+title: "Breached password detection a.k.a. binary search and indexing in action"
 date: 2022-04-09T20:38:38+02:00
 draft: false
 ---
@@ -20,7 +20,7 @@ Good thing there's a database known to humankind as [haveibeenpwned (HIBP)](http
 
 The database is a text file that contains the leaked passwords hashes followed by the exact count of how many times that password was seen in the source data breaches.
 
-HIBP provides an [API](https://haveibeenpwned.com/API/v3) but here's the thing: it has a rate limit of one request per 1500 milliseconds. This means it's not suitable for using it in production.
+HIBP provides an [API](https://haveibeenpwned.com/API/v3) but here's the thing: it has a rate limit of one request per 1500 milliseconds. This means it isn't suitable for using it in production.
 
 Yet, there is way, and this article is all about me showing you that way. 
 
@@ -30,25 +30,19 @@ Note*: There are multiple versions of the database and we're going to use the ve
 
 So, our task is to decide whether the breached password database contains the SHA1 hash of the given password as fast as possible with as low resource usage as possible.
 
-*Note...
-
-Low resource usage/CPU utilization is very important, especially if you deploy your application to the cloud.
-
 The size of the HIBP breached password database is more than 36GB as of the writing this article (v8).
 
 # The solution
 
 ## Linear search - too slow, too much resource usage
 
-Linear search is the easiest solution to implement. You have to go through the file, line by line, and compare each line with the given hash. If there is a match, bingo: the password has been compromised. If we make it till the end of the whole file without any match then *sigh*: the password wasn't breached.
+Linear search is the easiest solution to implement: you go through the file, line by line, and compare each line with the given hash. If there is a match: the password has been compromised. If we make it till the end of the whole file without any match then the password wasn't breached.
 
 The biggest problem with this approach is that it uses lots of CPU and it runs for minutes. Especially if we assume that most of the users' passwords are not compromised (so the search will query through the whole file most of the time).
 
 ## Binary search
 
-As I promised earlier, I'm going to explain the *why* about choosing the version of the breached password DB that's ordered by hash. 
-
-Here comes the *why*.
+As I promised earlier, I'm going to explain the *why* about choosing the version of the breached password DB that's ordered by hash.
 
 As Wikipedia says: 
 
@@ -56,7 +50,7 @@ As Wikipedia says:
 >
 > --- [Binary search algorithm. (2022, April 10). In Wikipedia, The Free Encyclopedia. Retrieved 11:57, April 10, 2022](https://en.wikipedia.org/wiki/Binary_search_algorithm)
 
-Once again, bingo! 🎉 We have a sorted "array" (that's actually a sorted text file) so it seems we can make good use of this algorithm to solve all of our performance problems.
+We have a sorted "array" (that's actually a sorted text file) so it seems we can make good use of this algorithm to solve all of our performance problems.
 
 There's more: our dataset has another property that we could take advantage of: **every hash has the same length!** (20 byte/40 characters because it's SHA1)
 
@@ -92,10 +86,10 @@ We're getting there, but we can still optimize our processed file.
 
 We can store the file as **binary data!** The file size will be cut in half compared to the size of the raw text version.
 
-After processing, we get a ~16GB file. That's much better! / That's more like it!
+After processing, we get a ~16GB file. That's much better!
 
 ### Converting the DB
-So our breached password converter script will look like this:
+So our converter script will look like this:
 
 ``` python
 raw_pwned_passwords_file = "pwned-passwords-sha1-ordered-by-hash-v8.txt"
@@ -110,6 +104,8 @@ It'll take a while to process the whole database but after it's done the size wi
 
 We shrank our database by more than half so it's definitely progress!
 
+The binary search algorithm:
+
 ``` python
 import os
 import sys
@@ -117,13 +113,13 @@ import hashlib
 
 searched_string = sys.argv[1]
 
-searched_hash = hashlib.sha1(searched_string.encode("utf-8")).hexdigest().upper()
+searched_hash = hashlib.sha1(searched_string.encode("utf-8")).hexdigest().upper() # create a hash from the searched password
 
 processed_db_file_path = "out.txt"
 
 file_size = os.path.getsize(processed_db_file_path) # get the size of the password db
 
-with open(processed_db_file_path, "rb") as file: # open the processed breach pw db file
+with open(processed_db_file_path, "rb") as file: # open the processed breached pw db file
     low = 0
     high = file_size//20 # we have file_size/20 hash in the file
     mid = 0
@@ -135,18 +131,16 @@ with open(processed_db_file_path, "rb") as file: # open the processed breach pw 
         file.seek(mid*20)
         current_hash = file.read(20).hex().upper()
         
-        if current_hash < searched_hash: # if x is greater, ignore left half
+        if current_hash < searched_hash: # searched_hash is greater, ignore left half
             low = mid + 1
  
-        elif current_hash > searched_hash: # if x is smaller, ignore right half
+        elif current_hash > searched_hash: # searched_hash is smaller, ignore right half
             high = mid - 1
 
-        else: # means x is present at mid
+        else: # searched_hash is present at mid
             print("found")
-            os._exit(0)
 
     print("not found")
-    os._exit(-1)
 ```
 
 Much faster than the linear search.
@@ -164,7 +158,7 @@ Then we read this index file into a variable. Thanks to this file, we need to ch
 However, we need to choose carefully our index size (hash prefix). 
 There are 2 things to take into cosideration: 
 
-1. The DB should contain every possible hash prefix
+1. The DB should contain every possible hash prefix.
 For example, if we use a 3-byte index then we have to make sure that our DB contains every possibility of the hash prefixes for the first 3 bytes/6 characters. So everything from *000000* to *FFFFFF*.
 We can check this with the following command: 
 
@@ -196,11 +190,11 @@ prev_line = "000000"
 
 with open("out.txt", "wb") as binary_file: # open hash output file for write as a binary file
     with open("index.txt", "w") as index_file: # open index file to write as a regular file
-        with open(raw_pwned_passwords_file, "r") as raw_file: # open raw file for a read
+        with open(raw_pwned_passwords_file, "r") as raw_file: # open raw file for reading
             for line in raw_file: # read the raw file line by line
                 if line[:6] != prev_line: # if there is a difference between the first 3 bytes then
                     index_file.write(str(binary_file.tell()) + "\n") # write the position to the index file
-                    prev_line = line[:6] # set the first 3 bytes check for the current one todo
+                    prev_line = line[:6]
                 
                 binary_file.write(bytes.fromhex(line[6:40])) # write the hash from 6th character to 40th
 ```
@@ -232,8 +226,11 @@ with open(index_file_path, "r") as index_file:
     indexes = list(map(int, index_file.read().splitlines()))
 
 with open(processed_db_file_path, "rb") as hash_file:
+     # the first 3 bytes of the hash represents the index of the indexes
+     # i.e. if the searched hash starts with '000012' then we need the 18th position
     low = indexes[int(searched_hash[:6], 16)] // 20
 
+    # max position is always n+1
     high = indexes[int(searched_hash[:6], 16)+1] // 20
     mid = 0
 
@@ -241,24 +238,19 @@ with open(processed_db_file_path, "rb") as hash_file:
 
         mid = (high + low) // 2
 
-        # If x is greater, ignore left half
         hash_file.seek(mid*20)
         hash = hash_file.read(20).hex().upper()
 
         if hash < searched_hash[6:]:
             low = mid + 1
 
-        # If x is smaller, ignore right half
         elif hash > searched_hash[6:]:
             high = mid - 1
 
-        # means x is present at mid
         else:
             print("found")
-            os._exit(-0)
 
-    print("not found")        
-    os._exit(-1)
+    print("not found")
 ```
 
 # Conclusion
