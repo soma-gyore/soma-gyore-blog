@@ -12,6 +12,9 @@ theme = "LoveIt"
   # LoveIt theme version
   version = "0.2.X"
 
+    [params.page.code]
+      maxShownLines = -1
+
 [menu]
   [[menu.main]]
     identifier = "posts"
