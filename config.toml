@@ -3,7 +3,7 @@ baseURL = "https://soma-gyore.github.io/soma-gyore-blog/"
 defaultContentLanguage = "en"
 # language code
 languageCode = "en"
-title = "Soma Gyore's blog"
+title = "Soma Györe's blog"
 
 # Change the default theme to be use when building the site with Hugo
 theme = "LoveIt"
@@ -51,3 +51,12 @@ theme = "LoveIt"
   [markup.tableOfContents]
     startLevel = 1
     endLevel = 6
+
+# Author config
+# 作者配置
+[author]
+  name = "Soma Györe"
+  email = "gyore.soma@gmail.com"
+  # link = "https://soma-gyore.github.io/soma-gyore-blog"
+  # image = "/img/avatar.jpg"
+  # sex = "M"
