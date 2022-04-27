@@ -1,5 +1,6 @@
 ---
-title: "Breached password detection a.k.a. binary search and indexing in action"
+title: "Breached password detection"
+subtitle: "Binary search and indexing in action"
 date: 2022-04-09T20:38:38+02:00
 draft: false
 ---
